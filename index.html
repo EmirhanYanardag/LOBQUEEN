@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lobqueen</title>
+
+  <link rel="icon" href="favicon.png" sizes="32x32">
+  <link rel="icon" href="favicon.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="favicon.png">
+
+
+  
+  <style>
+    :root{
+      --bg: #0b0c10;
+      --text: #f5f5f5;
+      --muted: rgba(255,255,255,.65);
+      --panel: rgba(15,16,18,.65);
+      --panelBorder: rgba(255,255,255,.08);
+      --accent: #ffffff;
+      --shadow: 0 10px 30px rgba(0,0,0,.45);
+
+      /* Kolay düzenleme */
+      --bgImage: url("bg.jpg"); /* kendi görselini bg.jpg yapıp aynı klasöre koy */
+      --bgDim: .55;             /* 0-1 arası (1=çok karanlık) */
+      --bgBlur: 0.5px;           /* blur miktarı */
+      --titleSize: clamp(72px, 8vw, 130px);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      background: var(--bg);
+      color: var(--text);
+      overflow:hidden;
+    }
+
+    /* Background layer */
+    .bg{
+      position:fixed; inset:0;
+      background-image: var(--bgImage);
+      background-size:cover;
+      background-position:center;
+      transform: scale(1.05);
+      filter: blur(var(--bgBlur));
+      z-index:-2;
+    }
+    .bg::after{
+      content:"";
+      position:absolute; inset:0;
+      background: rgba(0,0,0,var(--bgDim));
+      z-index:-1;
+    }
+
+    /* Top bar */
+    .topbar{
+      position:fixed;
+      top:16px; left:16px; right:16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      pointer-events:none;
+      opacity:.85;
+    }
+    .topbar .left, .topbar .right{ display:flex; gap:14px; align-items:center; }
+    .chip{
+      pointer-events:auto;
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 12px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.25);
+      border-radius:12px;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+      font-size:12px;
+      color: var(--muted);
+      user-select:none;
+    }
+    .iconbtn{
+      pointer-events:auto;
+      width:40px; height:40px;
+      display:grid; place-items:center;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.25);
+      border-radius:12px;
+      backdrop-filter: blur(8px);
+      box-shadow: var(--shadow);
+      cursor:pointer;
+    }
+    .iconbtn svg{ width:18px; height:18px; opacity:.9; }
+
+    /* Layout */
+    .wrap{
+      height:100%;
+      display:grid;
+      grid-template-columns: 1fr minmax(280px, 360px);
+      gap: 24px;
+      padding: 90px 28px 28px 28px;
+    }
+
+    /* Left: big title */
+    .hero{
+      align-self:start;
+      max-width: 760px;
+      padding: 8px 0 0 0;
+    }
+    .tag{
+      font-size:12px;
+      letter-spacing:.22em;
+      color: rgba(255,255,255,.55);
+      margin-bottom:14px;
+    }
+    h1{
+      margin:0;
+      font-size: var(--titleSize);
+      letter-spacing:.06em;
+      line-height: .95;
+      text-transform: uppercase;
+    }
+    .ticker{
+      margin-top: 14px;
+      color: rgba(255,255,255,.7);
+      font-size: 16px;
+      letter-spacing:.22em;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .ticker .line{
+      width:42px;
+      height:1px;
+      background: rgba(255,255,255,.25);
+      display:inline-block;
+    }
+
+    /* Center bottom CTA */
+    .centerCta{
+      position:fixed;
+      left:50%;
+      transform: translateX(-50%);
+      bottom: 34px;
+      text-align:center;
+      width: min(720px, calc(100% - 40px));
+      padding: 14px 18px;
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.28);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .centerCta .small{
+      font-size:11px;
+      letter-spacing:.22em;
+      color: rgba(255,255,255,.55);
+      margin-bottom:8px;
+      text-transform: uppercase;
+    }
+    .centerCta .headline{
+      font-size: 26px;
+      letter-spacing:.12em;
+      margin: 0 0 10px 0;
+      text-transform: uppercase;
+    }
+    .centerCta .desc{
+      margin:0 0 12px 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: rgba(255,255,255,.7);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .btnRow{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .btn{
+      cursor:pointer;
+      border-radius: 14px;
+      padding: 10px 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight:600;
+      letter-spacing:.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .btn.primary{
+      background: rgba(255,255,255,.16);
+      border-color: rgba(255,255,255,.22);
+    }
+
+    /* Right socials panel */
+    .panel{
+  position: fixed;
+  top: 28px;
+  right: 28px;
+
+  width: min(440px, 100%);
+  padding: 18px;
+
+  border:1px solid var(--panelBorder);
+  background: var(--panel);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow);
+}
+
+    .panel h3{
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      letter-spacing: .22em;
+      color: rgba(255,255,255,.6);
+      text-transform: uppercase;
+    }
+    .row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.16);
+      margin-bottom:10px;
+    }
+    .row .name{
+      font-size: 12px;
+      letter-spacing:.18em;
+      color: rgba(255,255,255,.78);
+      text-transform: uppercase;
+    }
+    .row .actions{
+      display:flex; gap:10px; align-items:center;
+      color: rgba(255,255,255,.7);
+      font-size: 12px;
+      letter-spacing:.14em;
+      text-transform: uppercase;
+    }
+    a.link{
+  color: rgba(255,255,255,.75);
+  text-decoration: none;
+  border-bottom: none;
+}
+
+    .copyBox{
+      margin-top:10px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.16);
+    }
+    .copyLabel{
+      font-size: 11px;
+      letter-spacing:.22em;
+      color: rgba(255,255,255,.55);
+      text-transform: uppercase;
+      margin-bottom:8px;
+    }
+    .copyRow{
+      display:flex; gap:8px; align-items:center;
+    }
+    input.addr{
+      width:100%;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+      outline:none;
+      font-family: inherit;
+      font-size: 12px;
+    }
+    /* X COMMUNITY satırı anchor olduğu için underline'ı buradan kaldırıyoruz */
+    a.row,
+    a.row:visited,
+    a.row:hover,
+    a.row:active{
+      text-decoration: none !important;
+      border-bottom: none !important;
+      color: inherit;
+    }
+
+/* İçindeki yazılara da underline gelmesin */
+a.row *{
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.rightNote{
+  position: fixed;
+  top: 250px;
+  right: 42px;
+  width: min(520px, calc(100% - 60px));
+  pointer-events: none;
+  opacity: .95;
+}
+
+.rightNote .scramble{
+  margin: 0;
+  white-space: pre-wrap;
+  text-align: right;
+
+  /* ince/düz/zarif */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.9;
+  letter-spacing: .02em;
+
+  color: rgba(255,255,255,.9);
+  text-shadow: 0 10px 30px rgba(0,0,0,.55);
+}
+
+/* mobilde ister görünmesin, ister aşağı insin */
+@media (max-width: 900px){
+  .rightNote{
+    position: static;
+    width: auto;
+    margin: 10px 0 0 auto;
+    padding: 0 20px;
+    pointer-events: auto;
+  }
+  .rightNote .scramble{ text-align: left; }
+}
+.caLine{
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.caCopy{
+  display: inline-block;
+  margin-left: 6px;
+  color: rgba(255,255,255,.85);
+  cursor: pointer;
+  transition: text-shadow .2s ease, color .2s ease, transform .2s ease;
+}
+
+.caCopy:hover{
+  color: rgba(255,255,255,1);
+  text-shadow: 0 0 10px rgba(255,255,255,.35), 0 0 22px rgba(255,255,255,.18);
+  transform: translateY(-1px);
+}
+
+.copiedToast{
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: .18em;
+  color: rgba(255,255,255,.75);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+  text-align: center;
+  pointer-events: none;
+}
+
+.copiedToast.show{
+  opacity: 1;
+  transform: translateY(0);
+}
+.btn{
+  text-decoration: none;
+}
+
+.btn:hover,
+.btn:focus,
+.btn:active{
+  text-decoration: none;
+}
+
+
+
+
+
+    /* MOBILE FIX */
+@media (max-width: 900px){
+  body{ overflow:auto; }
+
+  /* Başlık çok büyük olmasın */
+  :root{
+    --titleSize: clamp(44px, 13vw, 72px);
+  }
+
+  .wrap{
+    height: auto;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 84px 18px 24px 18px;
+  }
+
+  /* Sol başlık alanı */
+  .hero{
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .ticker{
+    font-size: 13px;
+    letter-spacing: .18em;
+  }
+  .ticker .line{ width: 32px; }
+
+  /* SOCIAL panel: fixed değil, tam ortalı ve sayfanın içinde */
+  .panel{
+    position: static;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    right: auto;
+    top: auto;
+  }
+
+  /* Sağ yazı: fixed değil, ortalı ve daha küçük */
+  .rightNote{
+    position: static;
+    width: 100%;
+    max-width: 520px;
+    margin: 6px auto 0 auto;
+    padding: 0 2px;
+    pointer-events: auto;
+  }
+  .rightNote .scramble{
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.85;
+    letter-spacing: .01em;
+  }
+
+  /* Alt CA kutusu: fixed değil, ortalı */
+  .centerCta{
+    position: static;
+    transform: none;
+    width: 100%;
+    max-width: 520px;
+    margin: 14px auto 22px auto;
+    left: auto;
+    bottom: auto;
+  }
+  .centerCta .headline{
+    font-size: 22px;
+    letter-spacing: .10em;
+  }
+  .centerCta .desc{
+    font-size: 12px;
+    text-align: center;
+    word-break: break-all; /* CA taşmasın */
+  }
+
+  /* Buton satırı ortalı */
+  .btnRow{ justify-content:center; }
+  .hero{
+  text-align: center;
+  margin: 0 auto;
+}
+
+.hero h1{
+  text-align: center;
+}
+
+.ticker{
+  justify-content: center;
+}
+
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+
+  <div class="topbar">
+    <div class="left">
+      <div class="chip"></div>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="tag"></div>
+      <h1 id="title">LOBQUEEN<br/>WILDE</h1>
+      <div class="ticker">
+        <span class="line"></span>
+        <span id="ticker">$LOBQUEEN</span>
+        <span class="line"></span>
+      </div>
+    </section>
+
+    <aside class="panel">
+  <h3>SOCIAL</h3>
+
+  <a class="row" href="https://x.com/i/communities/2025781660139049104"
+     target="_blank" rel="noopener">
+
+    <div class="name">X COMMUNITY</div>
+
+    <div class="actions">
+      JOIN →
+    </div>
+
+  </a>
+</aside>
+  
+  <section class="rightNote" id="rightNote">
+  <pre class="scramble" id="scrambleText">
+THE QUEEN OF THE DEEP
+THE MOST MYSTERIOUS
+
+AND ENCHANTING SOVEREIGN OF THE OCEAN
+A BEING NEVER SEEN YET ALWAYS FELT
+
+WITH HER VERY SILENCE REFLECTING LIGHT
+THE SOLE TRUE AUTHORITY 
+
+WHO CONQUERS HEARTS THROUGH INVISIBLE BONDS
+
+  </pre>
+</section>
+
+
+  </main>
+
+  <section class="centerCta">
+
+  <div class="small"></div>
+
+  <h2 class="headline" id="ctaTitle">$LOBQUEEN</h2>
+
+  <p class="desc" id="ctaDesc">
+    CA:
+    <span
+      class="caCopy"
+      id="caCopy"
+      data-ca="E6e67NUDisbnWMbmuALDi6qRANbUiNHkpDnqhRW1pump">
+      E6e67NUDisbnWMbmuALDi6qRANbUiNHkpDnqhRW1pump
+    </span>
+  </p>
+
+  <div class="copiedToast" id="copiedToast">COPIED</div>
+
+  <div class="btnRow">
+    <a class="btn"
+       href="https://dexscreener.com/solana/cigpskbe78v7c7ttbe6cyx4wvvxt4dkq1qnvjxtkcqxw"
+       target="_blank"
+       rel="noopener">
+       CHART
+    </a>
+  </div>
+
+</section>
+
+
+  <script>
+    // Copy CA
+    const ca = document.getElementById('ca');
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(ca.value);
+        const btn = document.getElementById('copyBtn');
+        const old = btn.textContent;
+        btn.textContent = 'COPIED';
+        setTimeout(()=> btn.textContent = old, 900);
+      }catch(e){
+        alert("Kopyalama başarısız. Manuel kopyala: " + ca.value);
+      }
+    });
+
+    // İstersen buradan dinamik metin de set edebilirsin:
+    // document.getElementById('title').innerHTML = "YOUR<br/>TOKEN";
+    // document.getElementById('ticker').textContent = "$YOUR";
+  </script>
+
+  <script>
+  // SCRAMBLE TEXT EFFECT
+  (function(){
+    const el = document.getElementById("scrambleText");
+    if(!el) return;
+
+    const finalText = el.textContent.trimEnd();
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+[]{};:,.?/\\|~";
+    const revealSpeed = 120;
+    const frameDelay  = 18;
+
+    let frame = 0;
+    const total = finalText.length;
+
+    function scrambleTo(progress){
+      let out = "";
+      for(let i=0;i<total;i++){
+        const c = finalText[i];
+        if(c === "\n" || c === "\r" || c === "\t"){
+          out += c;
+          continue;
+        }
+        if(c === " "){
+          out += " ";
+          continue;
+        }
+        if(i < progress){
+          out += c;
+        }else{
+          out += chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+      el.textContent = out;
+    }
+
+    scrambleTo(0);
+
+    const timer = setInterval(()=>{
+      frame++;
+      const progress = Math.min(total, Math.floor(frame * (total / revealSpeed)));
+      scrambleTo(progress);
+
+      if(progress >= total){
+        clearInterval(timer);
+        el.textContent = finalText;
+      }
+    }, frameDelay);
+  })();
+</script>
+<script>
+  // CA COPY
+  (function(){
+    const el = document.getElementById("caCopy");
+    const toast = document.getElementById("copiedToast");
+    if(!el) return;
+
+    el.addEventListener("click", async () => {
+      const ca = el.getAttribute("data-ca") || el.textContent.trim();
+      try{
+        await navigator.clipboard.writeText(ca);
+        if(toast){
+          toast.classList.add("show");
+          setTimeout(()=> toast.classList.remove("show"), 900);
+        }
+      }catch(e){
+        // fallback: seçip kopyalama
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand("copy");
+        sel.removeAllRanges();
+
+        if(toast){
+          toast.textContent = "COPIED";
+          toast.classList.add("show");
+          setTimeout(()=> toast.classList.remove("show"), 900);
+        }
+      }
+    });
+  })();
+</script>
+</body>
+</html>
